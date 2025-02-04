@@ -38,9 +38,9 @@ STORAGE_ACCOUNT_NAME=${UniqueEnv}${ProjectName}
 STORAGE_CONTAINER_NAME=${ProjectName}-ehprocessor
 COSMOS_ENDPOINT=https://${CosmosName}.documents.azure.com:443/
 COSMOS_DATABASE_ID=${ProjectName}
-COSMOS_CONTAINER=${ProjectName}" >ehapp-dotnet/.env
+COSMOS_CONTAINER=${ProjectName}" >.env
 
-source ehapp-dotnet/.env
+source .env
 ```
 
 ### Create Resources
