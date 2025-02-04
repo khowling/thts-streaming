@@ -1,0 +1,60 @@
+
+using Azure.Identity;
+using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Producer;
+using System.Text;
+using DotNetEnv;
+
+DotNetEnv.Env.TraversePath().Load();
+
+// get these from environment variables or configuration
+
+var ehNamespace = Environment.GetEnvironmentVariable("EVENT_HUBS_NAMESPACE");
+var eventHubName = Environment.GetEnvironmentVariable("EVENT_HUB_NAME");
+var credential = new DefaultAzureCredential();
+// use the credential to create a producer client
+
+// log out the connection string
+Console.WriteLine($"Event Hubs Namespace: {ehNamespace}, {eventHubName}");
+
+var producer = new EventHubProducerClient(ehNamespace, eventHubName, credential);
+try
+{
+    using EventDataBatch eventBatch = await producer.CreateBatchAsync();
+
+    for (var counter = 0; counter < int.MaxValue; ++counter)
+    {
+        var eventBody = new BinaryData($"Event Number: { counter }");
+        var eventData = new EventData(eventBody);
+
+        if (!eventBatch.TryAdd(eventData))
+        {
+            // At this point, the batch is full but our last event was not
+            // accepted.  For our purposes, the event is unimportant so we
+            // will intentionally ignore it.  In a real-world scenario, a
+            // decision would have to be made as to whether the event should
+            // be dropped or published on its own.
+
+            break;
+        }
+    }
+
+    // When the producer publishes the event, it will receive an
+    // acknowledgment from the Event Hubs service; so long as there is no
+    // exception thrown by this call, the service assumes responsibility for
+    // delivery.  Your event data will be published to one of the Event Hub
+    // partitions, though there may be a (very) slight delay until it is
+    // available to be consumed.
+
+    await producer.SendAsync(eventBatch);
+}
+catch
+{
+    // Transient failures will be automatically retried as part of the
+    // operation. If this block is invoked, then the exception was either
+    // fatal or all retries were exhausted without a successful publish.
+}
+finally
+{
+   await producer.CloseAsync();
+}
